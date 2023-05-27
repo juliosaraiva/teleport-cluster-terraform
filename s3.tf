@@ -6,8 +6,17 @@ resource "aws_s3_bucket" "certs" {
   force_destroy = true
 }
 
+resource "aws_s3_bucket_ownership_controls" "certs" {
+  bucket = aws_s3_bucket.certs.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
 resource "aws_s3_bucket_acl" "certs" {
-  bucket = aws_s3_bucket.certs.bucket
+  depends_on = [aws_s3_bucket_ownership_controls.certs]
+
+  bucket = aws_s3_bucket.certs.id
   acl    = "private"
 }
 
@@ -24,24 +33,24 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "certs" {
 }
 
 resource "aws_s3_bucket_versioning" "certs" {
-  bucket = aws_s3_bucket.certs.bucket
+  bucket = aws_s3_bucket.certs.id
 
   versioning_configuration {
     status = "Enabled"
   }
 }
 
-# resource "aws_s3_bucket_public_access_block" "certs" {
-#   bucket = aws_s3_bucket.certs.bucket
+resource "aws_s3_bucket_public_access_block" "certs" {
+  bucket = aws_s3_bucket.certs.id
 
-#   block_public_acls       = true
-#   block_public_policy     = true
-#   ignore_public_acls      = true
-#   restrict_public_buckets = true
-# }
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
 
 resource "aws_s3_object" "grafana_teleport_dashboard" {
-  bucket     = aws_s3_bucket.certs.bucket
+  bucket     = aws_s3_bucket.certs.id
   key        = "health-dashboard.json"
   source     = "${path.module}/assets/health-dashboard.json"
   depends_on = [aws_s3_bucket.certs]
@@ -49,7 +58,7 @@ resource "aws_s3_object" "grafana_teleport_dashboard" {
 
 // Grafana nginx config (letsencrypt)
 resource "aws_s3_object" "grafana_teleport_nginx" {
-  bucket     = aws_s3_bucket.certs.bucket
+  bucket     = aws_s3_bucket.certs.id
   key        = "grafana-nginx.conf"
   source     = "${path.module}/assets/grafana-nginx.conf"
   depends_on = [aws_s3_bucket.certs]
@@ -58,7 +67,7 @@ resource "aws_s3_object" "grafana_teleport_nginx" {
 
 // Grafana nginx config (ACM)
 resource "aws_s3_object" "grafana_teleport_nginx_acm" {
-  bucket     = aws_s3_bucket.certs.bucket
+  bucket     = aws_s3_bucket.certs.id
   key        = "grafana-nginx.conf"
   source     = "${path.module}/assets/grafana-nginx-acm.conf"
   depends_on = [aws_s3_bucket.certs]
